@@ -1,1 +1,4 @@
+- [ ] Camera
+- [ ] Humidity & Water Pump
+- [ ] Temperature & Aircooling System
 - [ ] Find tomato images dataset for training
