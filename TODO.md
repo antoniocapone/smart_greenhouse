@@ -1,3 +1,1 @@
-- [ ]
-- [ ]
-- [ ]
+- [ ] Find tomato images dataset for training
