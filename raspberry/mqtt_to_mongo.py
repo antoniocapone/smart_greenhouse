@@ -1,37 +1,32 @@
-#
-# Copyright 2021 HiveMQ GmbH
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#      http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
-import time
+import sqlite3, time
 import paho.mqtt.client as paho
 from paho import mqtt
 
-# setting callbacks for different events to see if it works, print the message etc.
+# conn = sqlite3.connect("progetto_tiai.db")
+
 def on_connect(client, userdata, flags, rc, properties=None):
     print("CONNACK received with code %s." % rc)
 
-# with this callback you can see if your publish was successful
 def on_publish(client, userdata, mid, properties=None):
     print("mid: " + str(mid))
 
-# print which topic was subscribed to
 def on_subscribe(client, userdata, mid, granted_qos, properties=None):
     print("Subscribed: " + str(mid) + " " + str(granted_qos))
 
-# print message, useful for checking if it was successful
 def on_message(client, userdata, msg):
     print(msg.topic + " " + str(msg.qos) + " " + str(msg.payload))
+    # try:
+    #     insert_query = """
+    #         INSERT INTO MISURAZIONI (tipo, valore, data)
+    #         VALUES ('%s', %d, %d);
+    #     """
+    #     print(f"Eseguo la query: {insert_query % (str(msg.topic), int(msg.payload.decode("utf-8").encode("unicode-escape").decode("unicode-escape")), time.time())}")
+    #     conn.execute(insert_query % (str(msg.topic), int(msg.payload.decode("utf-8").encode("unicode-escape").decode("unicode-escape")), time.time()))
+    #     conn.commit()
+    # except sqlite3.OperationalError as e:
+    #     print(f"Errore query: {e}")
+    # except ValueError:
+    #     pass
 
 def main() -> None:
 
