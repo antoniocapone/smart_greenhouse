@@ -46,7 +46,7 @@ def main() -> None:
 	client.on_publish = on_publish
 
 	# i nostri topic sono del tipo /topic/temperature e /topic/humidity
-	client.subscribe("topic/#", qos=1)
+	client.subscribe("/topic/#", qos=0)
 
 	client.loop_forever()
 
