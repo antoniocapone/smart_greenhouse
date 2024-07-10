@@ -1,0 +1,15 @@
+Specifiche
+Mini pompa dell'acqua:
+Intervallo di tensione: CC 3-5 V
+Tensione nominale: DC 3V / DC 4,5V
+Corrente nominale di carico: 0,18 A
+Corsa massima: 40-110 cm.
+Portata: 1,2-1,6 l/min
+Capacità di scarico dell'acqua inattiva: 100L/h
+Modalità di guida: design brushless DC, guida magnetica
+Diametro esterno uscita acqua: 0,29 pollici/7,5 mm Diametro interno uscita acqua: 0,17 pollici/4,5 mm Diametro ingresso acqua: 0,19 pollici/5 mm
+Tubo dell'acqua:
+Materiale: PVC
+ID. Dimensioni: 0,22"/5,54 mm
+Dimensione diametro esterno: 0,32"/8,20 mm
+Lunghezza: 3 m/9,84 piedi
