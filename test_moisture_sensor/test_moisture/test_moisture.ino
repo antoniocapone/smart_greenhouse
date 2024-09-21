@@ -3,13 +3,7 @@
 
 //By Circuitdigest 
 
-
-
-
 #define sensorPin A0
-
-
- 
 
 
 void setup() {
