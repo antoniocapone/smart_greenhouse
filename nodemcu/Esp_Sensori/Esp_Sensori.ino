@@ -1,5 +1,7 @@
 #include "secrets.h"
 
+#define TOPIC_DEBUG_PRINT
+
 #include <DHT.h>	// DHT sensor library da Adafruit 1.4.6
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h> // mqtt
@@ -14,15 +16,26 @@ const char* mqtt_server = BROKER_ADDRESS;
 
 WiFiClientSecure espClient;
 PubSubClient * client;
-unsigned long lastMsg = 0;
-#define MSG_BUFFER_SIZE (500)
-char msg[MSG_BUFFER_SIZE];
-int value = 0;
 
 // sensori
 #define DTYPE DHT11 // richiesto dalla libreria
-#define DPIN 4
+#define DPIN D4
 DHT dht(DPIN, DTYPE);
+#define TEMPERATURE_TRESHOLD  25.0f
+
+// comunicazione con arduino
+#include <SoftwareSerial.h>
+#define SERIAL_PORT_TX D3
+#define SERIAL_PORT_RX D4
+EspSoftwareSerial::UART espArduinoSerial;
+
+typedef struct {
+  bool air1;
+  bool air2;
+  bool air3;
+} app_handle_t;
+
+app_handle_t handle = {false, false, false};
 
 void setup_wifi() {
   delay(10);
@@ -48,24 +61,28 @@ void setup_wifi() {
 }
 
 void callback(char* topic, byte* payload, unsigned int length) {
-//   Serial.print("Message arrived [");
-//   Serial.print(topic);
-//   Serial.print("] ");
-//   for (int i = 0; i < length; i++) {
-//     Serial.print((char)payload[i]);
-//   }
-//   Serial.println();
 
-//   // Switch on the LED if the first character is present
-//   if ((char)payload[0] != NULL) {
-//     digitalWrite(LED_BUILTIN, LOW); // Turn the LED on (Note that LOW is the voltage level
-//     // but actually the LED is on; this is because
-//     // it is active low on the ESP-01)
-//     delay(500);
-//     digitalWrite(LED_BUILTIN, HIGH); // Turn the LED off by making the voltage HIGH
-//   } else {
-//     digitalWrite(LED_BUILTIN, HIGH); // Turn the LED off by making the voltage HIGH
-//   }
+#ifdef TOPIC_DEBUG_PRINT
+  Serial.print("Message arrived [");
+  Serial.print(topic);
+  Serial.print("] ");
+  for (int i = 0; i < length; i++) {
+    Serial.print((char)payload[i]);
+  }
+  Serial.println();
+
+  // Switch on the LED if the first character is present
+  if ((char)payload[0] != NULL) {
+    digitalWrite(LED_BUILTIN, LOW); // Turn the LED on (Note that LOW is the voltage level
+    // but actually the LED is on; this is because
+    // it is active low on the ESP-01)
+    delay(500);
+    digitalWrite(LED_BUILTIN, HIGH); // Turn the LED off by making the voltage HIGH
+  } else {
+    digitalWrite(LED_BUILTIN, HIGH); // Turn the LED off by making the voltage HIGH
+  }
+#endif
+
 }
 
 
@@ -109,6 +126,16 @@ void setup() {
   client->setCallback(callback);
 
   dht.begin();
+
+  espArduinoSerial.begin(115200, SWSERIAL_8N1, SERIAL_PORT_RX, SERIAL_PORT_TX, false);
+  if (!espArduinoSerial) { // If the object did not initialize, then its configuration is invalid
+    Serial.println("Invalid EspSoftwareSerial pin configuration, check config"); 
+    while (1) { // Don't continue with invalid configuration
+      Serial.println("Restart!");
+      delay (1000);
+    }
+  }
+  Serial.println("SoftwareSerial started successfully");
 }
 
 int cont = 0;
@@ -119,16 +146,27 @@ void loop() {
   }
   client->loop();
 
-//   float temperature = dht.readTemperature();
-  float temperature = 3.14 + cont++;
-  float humidity = 80;
+  float temperature = dht.readTemperature();
+  float humidity = dht.readHumidity();
+
   if (client->publish("/topic/temperature", std::to_string(temperature).c_str())) {
-	Serial.printf("Mando temperatura: %s\n", std::to_string(temperature).c_str());
+	  Serial.printf("Mando temperatura: %s\n", std::to_string(temperature).c_str());
   }
   if (client->publish("/topic/humidity", std::to_string(humidity).c_str())) {
-	Serial.printf("Mando umidità: %s\n", std::to_string(humidity).c_str());
+	  Serial.printf("Mando umidità: %s\n", std::to_string(humidity).c_str());
+  }
+  if (client->publish("/topic/temperature_treshold", std::to_string(temperature > TEMPERATURE_TRESHOLD).c_str())) {
+	  Serial.printf("Mando treshold superato: %s\n", std::to_string(temperature > TEMPERATURE_TRESHOLD).c_str());
   }
 
-  delay(5000);
+  if (temperature > TEMPERATURE_TRESHOLD) {
+    handle = {true, true, true};
+  } else {
+    handle = {false, false, false};
+  }
+
+  espArduinoSerial.write((uint8_t*)&handle, sizeof(handle));
+
+  delay(1000);
 
 }
