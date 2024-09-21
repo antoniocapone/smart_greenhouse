@@ -16,6 +16,7 @@ DHT dht_sensor(DHT_SENSOR_PIN, DHT_SENSOR_TYPE);
 void setup() {
   Serial.begin(115200);
   dht_sensor.begin(); // initialize the DHT sensor
+  Serial.print("Ciao\n");
 }
 
 void loop() {
