@@ -24,7 +24,7 @@ DHT dht(DPIN, DTYPE);
 #define TEMPERATURE_TRESHOLD  25.0f
 
 // comunicazione con arduino
-#include <SoftwareSerial.h>
+#include "src/SoftwareSerial.h"
 #define SERIAL_PORT_TX D3
 #define SERIAL_PORT_RX D4
 EspSoftwareSerial::UART espArduinoSerial;

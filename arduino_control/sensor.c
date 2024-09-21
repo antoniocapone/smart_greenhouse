@@ -10,7 +10,7 @@ void create_sensor(sensor_t* sensor, const uint8_t _sensor_pin) {
 int read_sensor(sensor_t* sensor, bool raw) {
   int value = analogRead(sensor->sensor_pin);
   if (!raw)
-    value = map(sensorValue, 0, 1023, 100, 0);
+    value = map(value, 0, 1023, 100, 0);
 
   return value;
 }

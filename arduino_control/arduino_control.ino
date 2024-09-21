@@ -5,18 +5,46 @@
 
 #include <SoftwareSerial.h>
 
-#include "sensor.h"
+#include <stdint.h>
+#include <stdbool.h>
+
+typedef struct {
+  uint8_t sensor_pin;
+  int     sensor_value;
+} sensor_t;
+
+typedef struct {
+  bool air1;
+  bool air2;
+  bool air3;
+} app_handle_t;
+
+void create_sensor(sensor_t* sensor, const uint8_t _sensor_pin);
+int read_sensor(sensor_t* sensor, bool raw);
+
+void create_sensor(sensor_t* sensor, const uint8_t _sensor_pin) {
+  sensor->sensor_pin = _sensor_pin;
+  sensor->sensor_value = 0;
+}
+
+int read_sensor(sensor_t* sensor, bool raw) {
+  int value = analogRead(sensor->sensor_pin);
+  if (!raw)
+    value = map(value, 0, 1023, 100, 0);
+
+  return value;
+}
 
 #define terrainSensor1  A0
 #define terrainSensor2  A1
 #define terrainSensor3  A2
 
-#define pump1           D8
-#define pump2           D9
-#define pump3           D10
+#define pump1           8
+#define pump2           9
+#define pump3           10
 
-#define software_tx     D2
-#define software_rx     D3
+#define software_tx     2
+#define software_rx     3
 
 #define max_terrain_hm 65
 
