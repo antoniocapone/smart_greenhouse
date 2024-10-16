@@ -21,21 +21,27 @@ PubSubClient * client;
 #define DTYPE DHT11 // richiesto dalla libreria
 #define DPIN D4
 DHT dht(DPIN, DTYPE);
-#define TEMPERATURE_TRESHOLD  25.0f
+#define TEMPERATURE_TRESHOLD  27.0f
+#define TEMP_PIN_OUT D8
 
 // comunicazione con arduino
 #include "src/SoftwareSerial.h"
 #define SERIAL_PORT_TX D3
-#define SERIAL_PORT_RX D4
+#define SERIAL_PORT_RX D5
 EspSoftwareSerial::UART espArduinoSerial;
 
-typedef struct {
-  bool air1;
-  bool air2;
-  bool air3;
-} app_handle_t;
+uint8_t fan = 0;
 
-app_handle_t handle = {false, false, false};
+typedef struct {
+  uint8_t hum1;
+  uint8_t hum2;
+  uint8_t hum3;
+  bool    pump1;
+  bool    pump2;
+  bool    pump3;
+} pump_handle_t;
+
+pump_handle_t pump_handle = {50, 50, 50, false, false, false};
 
 void setup_wifi() {
   delay(10);
@@ -116,6 +122,7 @@ void setup() {
   // When opening the Serial Monitor, select 9600 Baud
   Serial.begin(9600);
   delay(500);
+  Serial.printf("Setup started\n");
 
   setup_wifi();
 
@@ -127,7 +134,7 @@ void setup() {
 
   dht.begin();
 
-  espArduinoSerial.begin(115200, SWSERIAL_8N1, SERIAL_PORT_RX, SERIAL_PORT_TX, false);
+  espArduinoSerial.begin(9600, SWSERIAL_8N1, SERIAL_PORT_RX, SERIAL_PORT_TX, false);
   if (!espArduinoSerial) { // If the object did not initialize, then its configuration is invalid
     Serial.println("Invalid EspSoftwareSerial pin configuration, check config"); 
     while (1) { // Don't continue with invalid configuration
@@ -135,10 +142,13 @@ void setup() {
       delay (1000);
     }
   }
+  espArduinoSerial.setTimeout(3000);
+  pinMode(TEMP_PIN_OUT, OUTPUT);
+  espArduinoSerial.flush();
   Serial.println("SoftwareSerial started successfully");
 }
 
-int cont = 0;
+uint8_t count = 0;
 
 void loop() {
   if (!client->connected()) {
@@ -155,18 +165,49 @@ void loop() {
   if (client->publish("/topic/humidity", std::to_string(humidity).c_str())) {
 	  Serial.printf("Mando umidità: %s\n", std::to_string(humidity).c_str());
   }
-  if (client->publish("/topic/temperature_treshold", std::to_string(temperature > TEMPERATURE_TRESHOLD).c_str())) {
-	  Serial.printf("Mando treshold superato: %s\n", std::to_string(temperature > TEMPERATURE_TRESHOLD).c_str());
+  if (client->publish("/topic/temperature_treshold", std::to_string(fan).c_str())) {
+	  Serial.printf("Mando treshold superato: %s\n", std::to_string(fan).c_str());
   }
 
   if (temperature > TEMPERATURE_TRESHOLD) {
-    handle = {true, true, true};
+    fan = 1;
+    digitalWrite(TEMP_PIN_OUT, HIGH);
   } else {
-    handle = {false, false, false};
+    fan = 0;
+    digitalWrite(TEMP_PIN_OUT, LOW);
   }
 
-  espArduinoSerial.write((uint8_t*)&handle, sizeof(handle));
+  espArduinoSerial.write((uint8_t*)&fan, sizeof(fan));
+  delay(50);
 
-  delay(1000);
+  count = (count + 1) % 10;
+  if (count == 9) espArduinoSerial.flush();
+
+  if (espArduinoSerial.available() > 0) {
+    size_t ret = espArduinoSerial.readBytes((uint8_t *)&pump_handle, sizeof(pump_handle));
+    Serial.printf("Ricevuti %d bytes da Arduino Uno\n", ret);
+    if (ret == sizeof(pump_handle)) {
+        if (client->publish("/topic/hum1", std::to_string(pump_handle.hum1).c_str())) {
+          Serial.printf("Mando hum1: %s\n", std::to_string(pump_handle.hum1).c_str());
+        }
+        if (client->publish("/topic/hum2", std::to_string(pump_handle.hum2).c_str())) {
+          Serial.printf("Mando hum2: %s\n", std::to_string(pump_handle.hum2).c_str());
+        }
+        if (client->publish("/topic/hum3", std::to_string(pump_handle.hum3).c_str())) {
+          Serial.printf("Mando hum3: %s\n", std::to_string(pump_handle.hum3).c_str());
+        }
+        if (client->publish("/topic/pump1", std::to_string(pump_handle.pump1).c_str())) {
+          Serial.printf("Mando pump1: %s\n", std::to_string(pump_handle.pump1).c_str());
+        }
+        if (client->publish("/topic/pump2", std::to_string(pump_handle.pump2).c_str())) {
+          Serial.printf("Mando pump2: %s\n", std::to_string(pump_handle.pump2).c_str());
+        }
+        if (client->publish("/topic/pump3", std::to_string(pump_handle.pump3).c_str())) {
+          Serial.printf("Mando pump3: %s\n", std::to_string(pump_handle.pump3).c_str());
+        }
+    }
+  }
+
+  delay(571);
 
 }
